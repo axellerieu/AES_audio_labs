@@ -1,0 +1,68 @@
+float convolution(float * buffer ){
+	float convolution = 0;
+	for(int k=0; k<FILTER_TAP_NUM; k++){
+		convolution += filter_taps[k] * buffer[k];
+	}
+	return convolution;
+}
+
+
+int main()
+{
+
+	init_platform();
+
+	print("Started!\n\r");
+
+	AudioInitialize(SCU_TIMER_ID, AUDIO_IIC_ID, AUDIO_CTRL_BASEADDR);
+
+	initialize_FIFO(AUDIO_FIFO);
+	initialize_FIFO(FIR_FIFO);
+
+
+
+	float SampleL, SampleR;
+
+	float bufferL[FILTER_TAP_NUM], bufferR[FILTER_TAP_NUM];
+	int j=0;
+	float convolutionL = 0;
+	float convolutionR = 0;
+	int a;
+	int b;
+	int before;
+	int after;
+
+	while (1){
+
+		SampleL = (float) I2SFifoRead(AUDIO_FIFO);
+		SampleR = (float) I2SFifoRead(AUDIO_FIFO);
+
+		if(j==300){
+			before = Xil_In32(GLOBAL_TMR_BASEADDR + GTIMER_COUNTER_LOWER_OFFSET);
+		}
+
+		for(int i=FILTER_TAP_NUM-1; i>0; i--){
+			bufferL[i] = bufferL[i-1];
+			bufferR[i] = bufferR[i-1];
+		}
+
+		bufferL[0] = SampleL;
+		bufferR[0] = SampleR;
+
+		convolutionL = convolution(bufferL);
+		convolutionR = convolution(bufferR);
+
+		if (j==300){
+			after = Xil_In32(GLOBAL_TMR_BASEADDR + GTIMER_COUNTER_LOWER_OFFSET);
+			xil_printf("count process total time = %d \r\n", after - before);
+		}
+		j++;
+
+
+		I2SFifoWrite(AUDIO_FIFO, (u32)convolutionL);
+		I2SFifoWrite(AUDIO_FIFO, (u32)convolutionR);
+	}
+
+	cleanup_platform();
+	return 0;
+}
