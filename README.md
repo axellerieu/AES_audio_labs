@@ -1,5 +1,5 @@
 # AES_audio_labs
-Git to share my audio filtering implementations.
+Repository to share my audio filtering implementations.
 
 ## Description of the project
 
